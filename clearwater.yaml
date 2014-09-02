@@ -1,0 +1,153 @@
+imports:
+    - http://www.getcloudify.org/spec/openstack-plugin/1.0/plugin.yaml
+    - http://www.getcloudify.org/spec/chef-plugin/1.0/plugin.yaml
+ 
+plugins:
+   dns-plugin:
+     derived_from: cloudify.plugins.agent_plugin
+     properties:
+        folder: dns-plugin
+
+types:
+    vm_host:
+        derived_from: cloudify.openstack.server
+        properties:
+            -   worker_config:
+                    user: ubuntu
+            -   server:
+                     # HP Cloud specific - start
+                     # image: 169d484a-dde2-44c8-8f15-daaa1ba69e94 # "Ubuntu Server 14.04.1 LTS (amd64 20140724) - Partner Image"
+                     # image: 00398423-7429-4064-b781-fa0af00449c8 # Ubuntu Server 13.10 (amd64 20140409.1) - Partner Image
+                     image: 75d47d10-fef8-473b-9dd1-fe2f7649cb41 # Ubuntu Server 12.04.2 LTS (amd64 20130318) - Partner Image
+                     flavor_name: standard.large 
+                     # HP Cloud specific - end
+                     security_groups: ['Alles_erlaubt']
+                     userdata: |
+                         #!/bin/bash -ex
+                         echo "15.126.225.128" "chef-server2" >> /etc/hosts
+
+relationships:
+     dns_client_uses_dns_server:
+       derived_from: cloudify.relationships.connected_to
+       source_interfaces:
+          cloudify.interfaces.relationship_lifecycle:
+             - postconfigure: dns-plugin.tasks.configure_resolv_conf
+
+blueprint:
+    name: clearwater
+    nodes:
+        -   name: clearwater_vm
+            type: vm_host
+            instances:
+                deploy: 1
+            relationships:
+                -   type: cloudify.relationships.depends_on
+                    target: Alles_erlaubt
+        -   name: dns_vm
+            type: vm_host
+            relationships:
+                -   type: cloudify.relationships.depends_on
+                    target: Alles_erlaubt
+                   
+ 
+        -   name: Alles_erlaubt
+            type: cloudify.openstack.security_group
+            properties:
+                security_group:
+                    name: Alles_erlaubt
+                rules: 
+                    - remote_ip_prefix: 0.0.0.0/0
+                      port_range_min: 1
+                      port_range_max: 65535
+        -   name: bono_app
+            type: cloudify.types.chef.app_module
+            properties:
+              chef_config:
+                version: 11.10.4-1
+                chef_server_url: https://15.126.225.128:443
+                validation_client_name: chef-validator
+                validation_key: |
+                    -----BEGIN RSA PRIVATE KEY-----
+                    MIIEpAIBAAKCAQEA0eGlSxvojgiuE71W4hvRbQDyzp6akxw1Q2gSQmWJnbgt8HTp
+                    P25XWx+2aXqlAsd16C3fxX5CHIkQdSQxXjffb39+RFxPgP20ZfmmAaeKQ1C48aBI
+                    WZrQFH2htcHyau8vRPKXNSMYz3mZ0fY6U7F5u6ivoMHlzMUxK1RLkFUMknkmzgqI
+                    PGkDCB/LittRV4icSk1LR0dyxIe+reszyaYLZfgrjfcWtf7iTgjp2ulcojryhFIq
+                    0dYbWViewuRwvfArSc5hUenKJfeQfPTEgHV+Ry6oSgVMH/7VAF3AVBqrEtjnIIfh
+                    cfii11uyfbyDGsW6xO+koT3/32ufbpnoJpPYVwIDAQABAoIBAFFkJxy8gu/pz9AZ
+                    4gKndQzHjGGyQhGAo+szBbm39Kk0TqRsQjP2D2xoHO5EwI8WWNQkTh4he3Pjd31l
+                    /rsiAcUUdRv/jFliib3uFYGYvlaijEYvuT7+eWko2zhIMUFk5jjftuHFbY6wAoXY
+                    7f+c2K98mDdIWlyRsCK0euVLBigana7poPUeg6adF4n7VHt4kY/Z2YfWPW2E+S/u
+                    xECwa4vzlIYpGIDNlfAY9oQoPssOGStS4I85MzuRZKE2JxKd8RfhPmhun4mW+7xG
+                    vgeJrXtFPR1/mQ76CMunGubmIKvw/0sBY2jhYG0WzQCh3nDDLA+LRs+EvQ7pYOMV
+                    iEUpOmECgYEA7JWmU5oGWvq45sjVLi6BQq3HOUxATGbhPA2mJhNg9nFR8m8IaW/t
+                    K0aT7ztFM5qy4dmqhBDvmjfxrZWQFhJ0zSVnCKs8I2BNSzwdDWUpTry9SxbHl1TE
+                    1NHEMjXmXhqJ/yCF7gl4d8WK7AF/+x9gc0Q3mUc32murLaDLNkxrnnECgYEA4xr+
+                    8fR5T/6l22jcZq4hTBbp/6GQTvOXCAVe7b8WOx4jSs0a1Ev1/LdEuWGDwbCLQYPx
+                    1rLxIv4UoqS8DPsRH3NxBfoUqowam+1TBfa0wuBEDYHC5zj3/GXXC0CShqA8Lba7
+                    NJYnF2myxxNCVRaBYlmDIN6EFzZ257YcqiZK10cCgYAgSJ+EwvzhB1uZ6ofkoGX1
+                    Il+QOw5/Hn7XwgkNIxHVL0t+aJZeRO65PA1N1OmxjAei+B/jm6gGhGHPTRx3Vpdn
+                    sxXnQe6X6TlC7fYM8OP9IZY3G+mqhd/CJsm+DEreRoLUNKzx+Yrd1TAK2n2LWBHC
+                    SOnJWcWOYajfNhTk2PLKkQKBgQDMV4X9ftOIvr/NY9SsLxGWvSde86g84cCLXwnD
+                    MaR3HO70Zwg07QQwl1Ym1y8OICOsl2QKooeFzMgUb9UkeOM3QU/46MOfkOCAXFHP
+                    k+OhVNjmrlMIaaH4YEnVvgwZRiPfngNjlZcm4dwSc6nDlbRlIdVyxcRkfoUOiDXS
+                    gxHkEQKBgQC/ZIQeudDcLeiNk/vQjqJpYgo/Kfudduwai9GD32Ykf6f8PmksY29f
+                    OdcaXRbIEZqtcJTd/tSPvwYwW8urcUPOVLTsXaqEJgV9rn9YyV443egs1b30r5id
+                    4YfNl337dJEXNpPDMYZm+0GSRijToFgfT9lzxUVwFCyFrIpDHFUuOA==
+                    -----END RSA PRIVATE KEY-----
+                node_name_prefix: bono-
+                node_name_suffix: clw1.example.com
+                environment: clearwater
+                runlists:
+                    create:
+                        - role[bono]
+            relationships:
+                -  type: cloudify.relationships.contained_in
+                   target: clearwater_vm
+                -  type: dns_client_uses_dns_server
+                   target: dns_app
+ 
+        -   name: dns_app
+            type: cloudify.types.chef.app_module
+            properties:
+              chef_config:
+                version: 11.10.4-1
+                chef_server_url: https://15.126.225.128:443
+                validation_client_name: chef-validator
+                validation_key: |
+                    -----BEGIN RSA PRIVATE KEY-----
+                    MIIEpAIBAAKCAQEA0eGlSxvojgiuE71W4hvRbQDyzp6akxw1Q2gSQmWJnbgt8HTp
+                    P25XWx+2aXqlAsd16C3fxX5CHIkQdSQxXjffb39+RFxPgP20ZfmmAaeKQ1C48aBI
+                    WZrQFH2htcHyau8vRPKXNSMYz3mZ0fY6U7F5u6ivoMHlzMUxK1RLkFUMknkmzgqI
+                    PGkDCB/LittRV4icSk1LR0dyxIe+reszyaYLZfgrjfcWtf7iTgjp2ulcojryhFIq
+                    0dYbWViewuRwvfArSc5hUenKJfeQfPTEgHV+Ry6oSgVMH/7VAF3AVBqrEtjnIIfh
+                    cfii11uyfbyDGsW6xO+koT3/32ufbpnoJpPYVwIDAQABAoIBAFFkJxy8gu/pz9AZ
+                    4gKndQzHjGGyQhGAo+szBbm39Kk0TqRsQjP2D2xoHO5EwI8WWNQkTh4he3Pjd31l
+                    /rsiAcUUdRv/jFliib3uFYGYvlaijEYvuT7+eWko2zhIMUFk5jjftuHFbY6wAoXY
+                    7f+c2K98mDdIWlyRsCK0euVLBigana7poPUeg6adF4n7VHt4kY/Z2YfWPW2E+S/u
+                    xECwa4vzlIYpGIDNlfAY9oQoPssOGStS4I85MzuRZKE2JxKd8RfhPmhun4mW+7xG
+                    vgeJrXtFPR1/mQ76CMunGubmIKvw/0sBY2jhYG0WzQCh3nDDLA+LRs+EvQ7pYOMV
+                    iEUpOmECgYEA7JWmU5oGWvq45sjVLi6BQq3HOUxATGbhPA2mJhNg9nFR8m8IaW/t
+                    K0aT7ztFM5qy4dmqhBDvmjfxrZWQFhJ0zSVnCKs8I2BNSzwdDWUpTry9SxbHl1TE
+                    1NHEMjXmXhqJ/yCF7gl4d8WK7AF/+x9gc0Q3mUc32murLaDLNkxrnnECgYEA4xr+
+                    8fR5T/6l22jcZq4hTBbp/6GQTvOXCAVe7b8WOx4jSs0a1Ev1/LdEuWGDwbCLQYPx
+                    1rLxIv4UoqS8DPsRH3NxBfoUqowam+1TBfa0wuBEDYHC5zj3/GXXC0CShqA8Lba7
+                    NJYnF2myxxNCVRaBYlmDIN6EFzZ257YcqiZK10cCgYAgSJ+EwvzhB1uZ6ofkoGX1
+                    Il+QOw5/Hn7XwgkNIxHVL0t+aJZeRO65PA1N1OmxjAei+B/jm6gGhGHPTRx3Vpdn
+                    sxXnQe6X6TlC7fYM8OP9IZY3G+mqhd/CJsm+DEreRoLUNKzx+Yrd1TAK2n2LWBHC
+                    SOnJWcWOYajfNhTk2PLKkQKBgQDMV4X9ftOIvr/NY9SsLxGWvSde86g84cCLXwnD
+                    MaR3HO70Zwg07QQwl1Ym1y8OICOsl2QKooeFzMgUb9UkeOM3QU/46MOfkOCAXFHP
+                    k+OhVNjmrlMIaaH4YEnVvgwZRiPfngNjlZcm4dwSc6nDlbRlIdVyxcRkfoUOiDXS
+                    gxHkEQKBgQC/ZIQeudDcLeiNk/vQjqJpYgo/Kfudduwai9GD32Ykf6f8PmksY29f
+                    OdcaXRbIEZqtcJTd/tSPvwYwW8urcUPOVLTsXaqEJgV9rn9YyV443egs1b30r5id
+                    4YfNl337dJEXNpPDMYZm+0GSRijToFgfT9lzxUVwFCyFrIpDHFUuOA==
+                    -----END RSA PRIVATE KEY-----
+                node_name_prefix: dns-
+                node_name_suffix: clw1.example.com
+                environment: clearwater
+                runlists:
+                    create:
+                        - role[dns]
+            relationships:
+                -  type: cloudify.relationships.contained_in
+                   target: dns_vm
+ 

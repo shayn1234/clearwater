@@ -1,0 +1,40 @@
+!WD_Settings
+_management_ip: 15.126.197.97
+_management_key: null
+_management_user: null
+_mgmt_aliases: {}
+_mgmt_to_contextual_aliases: {}
+_provider: !!python/unicode 'cloudify_openstack'
+_provider_context:
+  !!python/unicode 'cloudify':
+    !!python/unicode 'cloudify_agent': {!!python/unicode 'agent_key_path': !!python/unicode '~/.ssh/cloudify-agents-kp.pem',
+      !!python/unicode 'max_workers': 5, !!python/unicode 'min_workers': 2, !!python/unicode 'remote_execution_port': 22,
+      !!python/unicode 'user': !!python/unicode 'ubuntu'}
+    !!python/unicode 'resources_prefix': !!python/unicode ''
+    !!python/unicode 'workflows': {!!python/unicode 'task_retries': -1, !!python/unicode 'task_retry_interval': 30}
+  !!python/unicode 'resources':
+    !!python/unicode 'agents_keypair': {!!python/unicode 'created': false, !!python/unicode 'id': !!python/unicode 'shay-cloudify-agents-kp',
+      !!python/unicode 'name': !!python/unicode 'shay-cloudify-agents-kp', !!python/unicode 'type': !!python/unicode 'keypair'}
+    !!python/unicode 'agents_security_group': {!!python/unicode 'created': false,
+      !!python/unicode 'id': !!python/unicode 'e5b076d7-ed50-4e3e-a3a1-7656f83f4314',
+      !!python/unicode 'name': !!python/unicode 'shay-cloudify-sg-agents', !!python/unicode 'type': !!python/unicode 'neutron
+        security group'}
+    !!python/unicode 'ext_network': {!!python/unicode 'created': false, !!python/unicode 'id': !!python/unicode '7da74520-9d5e-427b-a508-213c84e69616',
+      !!python/unicode 'name': !!python/unicode 'Ext-Net', !!python/unicode 'type': !!python/unicode 'network'}
+    !!python/unicode 'floating_ip': {!!python/unicode 'created': true, !!python/unicode 'id': !!python/unicode '55023431-dd1c-4179-9e43-471a3706a0c0',
+      !!python/unicode 'ip': !!python/unicode '15.126.197.97', !!python/unicode 'type': !!python/unicode 'floating
+        ip'}
+    !!python/unicode 'int_network': {!!python/unicode 'created': false, !!python/unicode 'id': !!python/unicode 'bb73d8f6-6005-4ff0-8c31-80b59df1c3ac',
+      !!python/unicode 'name': !!python/unicode 'cloudify-admin-network', !!python/unicode 'type': !!python/unicode 'network'}
+    !!python/unicode 'management_keypair': {!!python/unicode 'created': false, !!python/unicode 'id': !!python/unicode 'shay-cloudify-management-kp',
+      !!python/unicode 'name': !!python/unicode 'shay-cloudify-management-kp', !!python/unicode 'type': !!python/unicode 'keypair'}
+    !!python/unicode 'management_security_group': {!!python/unicode 'created': false,
+      !!python/unicode 'id': !!python/unicode '0a67a6f3-18f5-4b0c-a396-d789483026dc',
+      !!python/unicode 'name': !!python/unicode 'shay-cloudify-sg-management', !!python/unicode 'type': !!python/unicode 'neutron
+        security group'}
+    !!python/unicode 'management_server': {!!python/unicode 'created': true, !!python/unicode 'id': !!python/unicode 'b91d6bfe-fdcc-4d25-849b-da9b544d6d9e',
+      !!python/unicode 'name': !!python/unicode 'cloudify-management-server', !!python/unicode 'type': !!python/unicode 'server'}
+    !!python/unicode 'router': {!!python/unicode 'created': false, !!python/unicode 'id': !!python/unicode '0e117cea-9a93-4ab5-82dc-472a69a0d651',
+      !!python/unicode 'name': !!python/unicode 'cloudify-router', !!python/unicode 'type': !!python/unicode 'router'}
+    !!python/unicode 'subnet': {!!python/unicode 'created': false, !!python/unicode 'id': !!python/unicode '193fb54d-b408-4ea8-b696-319c1c891efe',
+      !!python/unicode 'name': !!python/unicode 'cloudify-admin-network-subnet', !!python/unicode 'type': !!python/unicode 'subnet'}
