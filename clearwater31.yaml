@@ -1,0 +1,387 @@
+tosca_definitions_version: cloudify_dsl_1_0
+
+imports:
+#    - http://www.getcloudify.org/spec/cloudify/3.1/types.yaml
+    - types.yaml
+    - http://www.getcloudify.org/spec/openstack-plugin/1.1/plugin.yaml
+    - http://www.getcloudify.org/spec/chef-plugin/1.1/plugin.yaml
+#    - chef.yaml
+    - http://www.getcloudify.org/spec/diamond-plugin/1.1/plugin.yaml
+
+plugins:
+    dns-plugin:
+        executor: host_agent
+        source: dns-plugin
+
+relationships:
+    dns_client_uses_dns_server:
+       derived_from: cloudify.relationships.connected_to
+       source_interfaces:
+          cloudify.interfaces.relationship_lifecycle:
+             preconfigure: dns-plugin.dns_plugin.tasks.configure_resolv_conf
+
+workflows:
+   auto_heal_workflow:
+      mapping: default_workflows.cloudify.plugins.workflows.auto_heal_reinstall_node_subgraph
+      parameters: 
+         node_id: 
+            description: Failed node
+
+inputs:
+    server:
+        default:
+            image: f2977a84-7531-440d-9eb1-f91db3f87b72 # Ubuntu Server 12.04.2 LTS (amd64 20130318) - Partner Image
+            flavor_name: standard.large 
+            security_groups: ['Alles_erlaubt3']
+            userdata: |
+                #!/bin/bash -ex
+                echo "15.126.236.203" "chef-server2" >> /etc/hosts
+                mkdir -p /etc/chef/ohai/hints
+                echo true >/etc/chef/ohai/hints/hp.json
+                echo "127.0.0.1 sprout" >> /etc/hosts
+    chef_version: 
+        default: 11.10.4-1
+    chef_server_url: 
+        default: https://15.126.236.203:443
+    chef_validation_client_name: 
+        default: chef-validator
+    chef_validation_key: 
+        default: | 
+            -----BEGIN RSA PRIVATE KEY-----
+            MIIEogIBAAKCAQEAyrscEpeWbpiDhT9TSZcqZHllFvPg/FGmNiiHIt5i00iWDVlL
+            C8xAcZ7mi+G6hzdyabssw3+en/uL3qmnFMemM6h/Apa8eQrPMaBpTDAnNIPQTCLY
+            VOqrXAZNVezrWKIu4untO11kbdOPnuMs+Eemf481bkhaLYXJwkn8wIZYSJ3N6y/8
+            VfG9TISABA6zSKpelOCvrk9W4BF9+r4ufAujnKMSc2tloGDD42GAQj9J0Cobmoe2
+            ca2AbZ9qVmUpChigOTbrE4uP0FZ4uaELWB+3yk7N2liXIIKkBqxWd2u84Y/yG/2s
+            Os9u+mcZNw3urWlbfO6gbxB2KepqcvhfTPACUQIDAQABAoIBAHdIqtbhrJi8Uj53
+            qSjWshHWP73Gl22/GP4q0ICauyk4P1nxXS++6XgxF9PcaGUhIcfGYytQjuPxHTZR
+            OkcGxesFTF4YlSLfUlQP34T9nEPQ/yGdKw6j2VnXN2/EbCGFo/LN01EnvWzFm27Q
+            mmgnuHa7q6ONHMpGOxV/dSFOqulmLBF8Jix2L3zDzxrhfVefGm2pq0Y+2LiYnoxU
+            EegHc0wf+Nei5LT7CbcF650L8JoAYq0jfGpd5InsF7BuxnB/iHHTMIIQgaZiv4rE
+            eZn8HGAtz0eZ2e2Nz8U/R+Gns4jCDdNkO1P+2Frof54fqTSPgEeB9NMAkRpq57GM
+            /MwmV0ECgYEA76T/GBy1qGqtT2J4qsBAkn9UNab5MiKywjYewS0k80h9b6K6BrGv
+            N8gC48Lg5AOgQA31pz9Et6C94mbBV+RqM1dX/J5/+0+Sr3Rrn48XT6eSCbMWXExd
+            ubLxl782Cwpf+ix282k7un9xZ9o1dYevy2sBADeLkzdtG7ElcwCM1VkCgYEA2JEr
+            I008MClWviIhPCEOlgF8TFqjxzqVMo6ZNiOMFHA/VctIsa+voygSc/sgTOP13Dq7
+            iq/SShD1QDu0XlH0tgUbBG/LN/A/gFbf3t9+cVybWZWHYgxX+PIE0EeayiEG9pQQ
+            DEzrLrxtHYMCqSvT8J5WhGaDRceVKQTbuv9c3bkCgYAia3tsNittTi0oWsdkFwrv
+            P7STpDDkn5E3Tdiq/FXzT3UcxK2daoX1KBgqKIJunYq1yIuBAxhWm5LKYuHgQuFy
+            EFiF4yoUqYAzDTCsETxS54mVNRDAHwPTOT10AzW67jmM0Dghi/rVNZrPRMsq31tD
+            h1H0ewXkFjDoqk/rraeMuQKBgBt1BEgcgbYFd7bxcs9BzaydEZpIn50hw0q+o5Qm
+            m5r3xD/nXxcQFC+WZAiKXUUCXeiHFcH2mq3DSqTTLQIMV/8/1HYSimxULGjkGswR
+            /+D1gciw2ZJHyFuKq6uQeIKJ/20BxqsYkXTCdP8Z3ht+sAdAu+1bZedR74pc0FL8
+            D1UZAoGAKSpkAvycXM6K5ZI899vjdySyYfyjazvGABlQTHOaNyjXcIRjK2ZlLlZV
+            3P+X3LnmI5XSmYvexSPiF/uyfVCUZcdD/2BhgjPIvzgq4K04wq6Os8brcWJjBsCX
+            v7x+sQtmo/YB+p7RY0DXOlbFztezptnV7Ngip0XlySe3qv5GF4M=
+            -----END RSA PRIVATE KEY-----
+    chef_node_name_suffix: 
+        default: clw1.example.com
+    chef_environment: 
+        default: clearwater
+
+
+groups:
+   autohealing_group:
+      members: 
+         - bono_vm
+      policies: 
+         simple_autoheal_policy: 
+            type: cloudify.policies.types.host_failure
+            triggers:  
+               auto_heal_trigger:
+                  type: cloudify.policies.triggers.execute_workflow
+                  parameters:
+                     workflow: auto_heal_workflow
+                     allow_custom_parameters: True
+                     workflow_parameters:
+                        node_id: {get_property: ['SELF', 'failing_node']}
+                        diagnose_value: {get_property: ['SELF', 'diagnose']}
+
+node_templates:
+    bono_ip:
+        type: cloudify.openstack.nodes.FloatingIP
+    ellis_ip:
+        type: cloudify.openstack.nodes.FloatingIP
+        
+    bono_vm:
+        type: cloudify.openstack.nodes.Server 
+        properties:
+           server: { get_input: server }
+        relationships:
+            -   type: cloudify.openstack.server_connected_to_floating_ip
+                target: bono_ip
+            -   type: cloudify.relationships.depends_on
+                target: Alles_erlaubt3
+                
+        interfaces:          
+            cloudify.interfaces.monitoring_agent:
+               install:
+                  implementation: diamond.diamond_agent.tasks.install
+                  inputs:
+                     diamond_config: 
+                        interval: 5
+               start: diamond.diamond_agent.tasks.start
+               stop: diamond.diamond_agent.tasks.stop
+               uninstall: diamond.diamond_agent.tasks.uninstall
+
+            cloudify.interfaces.monitoring:
+               start:
+                  implementation: diamond.diamond_agent.tasks.add_collectors
+                  inputs:
+                     collectors_config:
+                            ExampleCollector: {}
+#                           CPUCollector: {}
+#                           SNMPRawCollector:                   
+#                              config:
+#                                 interval: 5
+#                                 devices:
+#                                    bono:
+#                                       host: example.com
+#                                       port: 161
+#                                       community: clearwater
+#                                       oids:
+#                                          1.2.826.0.1.1578918.9.2.4.1.2: requests
+
+    ellis_vm:
+        type: cloudify.openstack.nodes.Server
+        properties:
+           server: { get_input: server }
+        relationships:
+            -   type: cloudify.openstack.server_connected_to_floating_ip
+                target: ellis_ip
+            -   type: cloudify.relationships.depends_on
+                target: Alles_erlaubt3
+        
+    sprout_vm:
+        type: cloudify.openstack.nodes.Server
+        properties:
+           server: { get_input: server }
+        relationships:
+            -   type: cloudify.relationships.depends_on
+                target: Alles_erlaubt3
+                
+    homer_vm:
+        type: cloudify.openstack.nodes.Server
+        properties:
+           server: { get_input: server }
+        relationships:
+            -   type: cloudify.relationships.depends_on
+                target: Alles_erlaubt3
+    
+    homestead_vm:
+        type: cloudify.openstack.nodes.Server
+        properties:
+           server: { get_input: server }
+        relationships:
+            -   type: cloudify.relationships.depends_on
+                target: Alles_erlaubt3
+                
+    ralf_vm:
+        type: cloudify.openstack.nodes.Server
+        properties:
+           server: { get_input: server }
+        relationships:
+            -   type: cloudify.relationships.depends_on
+                target: Alles_erlaubt3
+                
+    dns_vm:
+        type: cloudify.openstack.nodes.Server
+        properties:
+           server: { get_input: server }
+        relationships:
+            -   type: cloudify.relationships.depends_on
+                target: Alles_erlaubt3
+                
+    Alles_erlaubt3:
+        type: cloudify.openstack.nodes.SecurityGroup
+        properties:
+            security_group:
+                name: Alles_erlaubt3
+            rules: 
+                - remote_ip_prefix: 0.0.0.0/0
+                  port_range_min: 1
+                  port_range_max: 65535
+                  protocol: tcp
+                - remote_ip_prefix: 0.0.0.0/0
+                  port_range_min: 1
+                  port_range_max: 65535
+                  protocol: udp
+
+
+    bono_app:
+        type: cloudify.chef.nodes.ApplicationModule
+        properties:
+          chef_config:
+            version: { get_input: chef_version }
+            chef_server_url: { get_input: chef_server_url }
+            validation_client_name: { get_input: chef_validation_client_name }
+            validation_key: { get_input: chef_validation_key }
+            node_name_prefix: bono-
+            node_name_suffix: { get_input: chef_node_name_suffix }
+            environment: { get_input: chef_environment}
+            runlists:
+                create:
+                    - role[bono]
+#        interfaces: 
+#           cloudify.interfaces.lifecycle:
+#              create:
+#                 implementation: scripts/clean_chef_node.sh
+#                 inputs:
+#                    node_name: bono
+
+        relationships:
+            -  type: cloudify.relationships.contained_in
+               target: bono_vm
+            -  type: dns_client_uses_dns_server
+               target: dns_app
+               
+    ellis_app:
+        type: cloudify.chef.nodes.ApplicationModule
+        properties:
+          chef_config:
+            version: { get_input: chef_version }
+            chef_server_url: { get_input: chef_server_url }
+            validation_client_name: { get_input: chef_validation_client_name }
+            validation_key: { get_input: chef_validation_key }
+            node_name_prefix: ellis-
+            node_name_suffix: { get_input: chef_node_name_suffix }
+            environment: { get_input: chef_environment}
+            runlists:
+                create:
+                    - role[ellis]
+        relationships:
+            -  type: cloudify.relationships.contained_in
+               target: ellis_vm
+            -  type: dns_client_uses_dns_server
+               target: dns_app
+               
+    ralf_app:
+        type: cloudify.chef.nodes.ApplicationModule
+        properties:
+          chef_config:
+            version: { get_input: chef_version }
+            chef_server_url: { get_input: chef_server_url }
+            validation_client_name: { get_input: chef_validation_client_name }
+            validation_key: { get_input: chef_validation_key }
+            node_name_prefix: ralf-
+            node_name_suffix: { get_input: chef_node_name_suffix }
+            environment: { get_input: chef_environment}
+            runlists:
+                create:
+                    - role[ralf]
+        relationships:
+            -  type: cloudify.relationships.contained_in
+               target: ralf_vm
+            -  type: dns_client_uses_dns_server
+               target: dns_app
+               
+    homestead_app:
+        type: cloudify.chef.nodes.ApplicationModule
+        properties:
+          chef_config:
+            version: { get_input: chef_version }
+            chef_server_url: { get_input: chef_server_url }
+            validation_client_name: { get_input: chef_validation_client_name }
+            validation_key: { get_input: chef_validation_key }
+            node_name_prefix: homestead-
+            node_name_suffix: { get_input: chef_node_name_suffix }
+            environment: { get_input: chef_environment}
+            runlists:
+                create:
+                    - role[homestead]
+        relationships:
+            -  type: cloudify.relationships.contained_in
+               target: homestead_vm
+            -  type: dns_client_uses_dns_server
+               target: dns_app
+               
+    homer_app:
+        type: cloudify.chef.nodes.ApplicationModule
+        properties:
+          chef_config:
+            version: { get_input: chef_version }
+            chef_server_url: { get_input: chef_server_url }
+            validation_client_name: { get_input: chef_validation_client_name }
+            validation_key: { get_input: chef_validation_key }
+            node_name_prefix: homer-
+            node_name_suffix: { get_input: chef_node_name_suffix }
+            environment: { get_input: chef_environment}
+            runlists:
+                create:
+                    - role[homer]
+        relationships:
+            -  type: cloudify.relationships.contained_in
+               target: homer_vm
+            -  type: dns_client_uses_dns_server
+               target: dns_app
+               
+    sprout_app:
+        type: cloudify.chef.nodes.ApplicationModule
+        properties:
+          chef_config:
+            version: { get_input: chef_version }
+            chef_server_url: { get_input: chef_server_url }
+            validation_client_name: { get_input: chef_validation_client_name }
+            validation_key: { get_input: chef_validation_key }
+            node_name_prefix: sprout-
+            node_name_suffix: { get_input: chef_node_name_suffix }
+            environment: { get_input: chef_environment}
+            runlists:
+                create:
+                    - role[sprout]
+        relationships:
+            -  type: cloudify.relationships.contained_in
+               target: sprout_vm
+            -  type: dns_client_uses_dns_server
+               target: dns_app
+
+    dns_app:
+        type: cloudify.chef.nodes.ApplicationModule
+        properties:
+          chef_config:
+            version: { get_input: chef_version }
+            chef_server_url: { get_input: chef_server_url }
+            validation_client_name: { get_input: chef_validation_client_name }
+            validation_key: { get_input: chef_validation_key }
+            node_name_prefix: dns-
+            node_name_suffix: { get_input: chef_node_name_suffix }
+            environment: { get_input: chef_environment}
+            runlists:
+                create:
+                    - role[dns]
+        relationships:
+            -  type: cloudify.relationships.contained_in
+               target: dns_vm
+
+    dns_app_config:
+        type: cloudify.chef.nodes.ApplicationModule
+        properties:
+          chef_config:
+            version: { get_input: chef_version }
+            chef_server_url: { get_input: chef_server_url }
+            validation_client_name: { get_input: chef_validation_client_name }
+            validation_key: { get_input: chef_validation_key }
+            node_name_prefix: dns-
+            node_name_suffix: { get_input: chef_node_name_suffix }
+            environment: { get_input: chef_environment}
+            runlists:
+                create:
+                    - recipe[configure-clearwater-dns]
+        relationships:
+                -  type: cloudify.relationships.contained_in
+                   target: dns_vm
+                -  type: cloudify.relationships.connected_to
+                   target: dns_app
+                -  type: cloudify.relationships.connected_to
+                   target: bono_app
+                -  type: cloudify.relationships.connected_to
+                   target: ellis_app
+                -  type: cloudify.relationships.connected_to
+                   target: ralf_app
+                -  type: cloudify.relationships.connected_to
+                   target: sprout_app
+                -  type: cloudify.relationships.connected_to
+                   target: homer_app
+                -  type: cloudify.relationships.connected_to
+                   target: homestead_app
+    

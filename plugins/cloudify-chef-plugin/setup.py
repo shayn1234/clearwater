@@ -13,30 +13,28 @@
 #    * See the License for the specific language governing permissions and
 #    * limitations under the License.
 
-__author__ = 'shay'
 
-from setuptools import setup
+__author__ = 'dank'
 
-# Replace the place holders with values for your project
+import setuptools
 
-setup(
 
-    # Do not use underscores in the plugin name.
-    name='dns-plugin',
-
-    version='3.1a1',
-    author='shay',
-    author_email='shayn@gigaspaces.com',
-    description='Configure DNS client to DNS server',
-
-    # This must correspond to the actual packages in the plugin.
-    # It will also serve as the plugin prefix for mapping operations to tasks.
-    packages=['dns_plugin'],
-
-    license='LICENSE',    
+setuptools.setup(
     zip_safe=False,
+    name='cloudify-chef-plugin',
+    version='1.1a4',
+    author='ilya',
+    author_email='ilya.sher@coding-knight.com',
+    packages=['chef_plugin'],
+    license='LICENSE',
+    description='Cloudify Chef plugin',
     install_requires=[
-        # Necessary dependency for developing plugins, do not remove!
-        "cloudify-plugins-common>=3.0"
-    ]
+        'cloudify-plugins-common==3.1a4',
+        'requests',
+    ],
+    package_data={
+        'chef_plugin': [
+            'chef/handler/cloudify_attributes_to_json_file.rb'
+        ]
+    },
 )
